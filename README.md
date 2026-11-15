@@ -90,40 +90,44 @@ The final estimate is expressed as:
 
 Both approaches use the ExtraTrees regression framework to estimate PM2.5 concentrations.
 
-### Overall Workflow
 
+## Overall Workflow
+
+The following flowchart illustrates the common image-processing pipeline and the two proposed PM2.5 prediction approaches.
+
+```mermaid
 flowchart TB
-    A(["📷 Original Camera Images"]) --> B["Image Organization"]
-    B --> C["Region of Interest (ROI) Extraction"]
+    A(["Original Camera Images"]) --> B["Image Organization"]
+    B --> C["ROI Extraction"]
     C --> D["Image Dehazing"]
     D --> E["SSIM Feature Extraction"]
     E --> F["Image-Associated Dataset"]
-    F --> G["Temporal Feature Engineering<br/>Cyclic Date & Time Encoding"]
+    F --> G["Temporal Feature Engineering"]
 
-    G --> H{"Select Prediction Approach"}
+    G --> H{"Prediction Approach"}
 
-    subgraph ALG1["ALGORITHM I · FAR–NEAR VIEW INTEGRATION"]
+    subgraph ALG1["ALGORITHM I — FAR-NEAR VIEW INTEGRATION"]
         direction TB
         I1["Distant View Features<br/>Belur"]
         I2["Nearby View Features<br/>FRB / RBU"]
         I3["Feature Integration<br/>Visual + Temporal Features"]
         I4["ExtraTrees Regressor"]
-        I5(["Distant-Station<br/>PM2.5 Prediction"])
+        I5(["Distant-Station PM2.5 Prediction"])
 
         I1 --> I3
         I2 --> I3
         I3 --> I4 --> I5
     end
 
-    subgraph ALG2["ALGORITHM II · RESIDUAL PREDICTION"]
+    subgraph ALG2["ALGORITHM II — RESIDUAL PREDICTION"]
         direction TB
         J1["Distant-View Features"]
         J2["Phase I: Initial Estimation<br/>ExtraTrees Model"]
         J3["Initial PM2.5 Estimate"]
-        J4["Calculate Residual<br/>Actual Distant PM2.5 − Initial Estimate"]
+        J4["Calculate Residual<br/>Actual Distant PM2.5 - Initial Estimate"]
         J5["Phase II: Residual Estimation<br/>ExtraTrees Model"]
         J6["Predicted Residual"]
-        J7["Final Estimate<br/>Initial Estimate + Predicted Residual"]
+        J7(["Final PM2.5 Estimate"])
 
         J1 --> J2 --> J3 --> J4 --> J5 --> J6 --> J7
     end
@@ -142,15 +146,16 @@ flowchart TB
     classDef algo2 fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:1.5px
     classDef output fill:#172554,stroke:#A78BFA,color:#FFFFFF,stroke-width:2px
 
-    class A,K source
+    class A source
     class B,C,D,E,F,G process
     class H decision
     class I1,I2,I3,I4,I5 algo1
     class J1,J2,J3,J4,J5,J6,J7 algo2
+    class K output
 
     style ALG1 fill:#F0FDF4,stroke:#16A34A,stroke-width:2px
     style ALG2 fill:#FFF7ED,stroke:#EA580C,stroke-width:2px
-
+```
 
 ## Repository Contents
 
