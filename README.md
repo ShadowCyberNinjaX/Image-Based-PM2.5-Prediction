@@ -13,7 +13,7 @@
 
 Air pollution, particularly fine particulate matter (PM2.5), is a major environmental and public health concern. Conventional air quality monitoring stations are expensive to install and maintain, making widespread monitoring challenging.
 
-This project investigates an image-based machine learning approach for estimating PM2.5 concentrations at different distances from a single camera.
+This project investigates an image-based machine learning approach for estimating PM2.5 concentrations at different distances using images captured by a single camera.
 
 The proposed methodology uses atmospheric visibility degradation as a visual indicator of particulate matter concentration. It combines image dehazing, Region of Interest (ROI) extraction, Structural Similarity Index Measure (SSIM), temporal feature engineering and machine learning regression.
 
@@ -43,53 +43,116 @@ Three monitoring locations were considered:
 
 PM2.5 measurements obtained from the corresponding monitoring stations were used as ground-truth data.
 
-## Project Workflow
+## Project Flow and Methodology
 
-The implementation follows the following processing pipeline:
+The research proposes two machine learning-based approaches for estimating PM2.5 concentrations at different distances using images captured by a single camera.
 
-```text
-             Original Images
-                    |
-                    v
-             Image Organization
-                    |
-                    v
-              ROI Extraction
-                    |
-                    v
-              Image Dehazing
-                    |
-                    v
-          Grayscale Conversion
-                    |
-                    v
-         Morphological Erosion
-                    |
-                    v
-            SSIM Calculation
-                    |
-                    v
-          Feature Extraction
-                    |
-                    v
-        Dataset Preparation
-                    |
-                    v
-        Temporal Feature Encoding
-                    |
-                    v
-          ExtraTrees Regression
-                    |
-                    v
-           Residual Prediction
-                    |
-                    v
-          Final PM2.5 Estimation
-```
+### Algorithm I: Far-Near View Integrated Approach
+
+This approach integrates visual information from nearby and distant views to estimate the PM2.5 concentration at the distant monitoring station.
+
+**Workflow:**
+
+1. **Distant View Processing:** Capture the distant station image, select the corresponding Region of Interest (ROI), perform image dehazing and extract SSIM features.
+2. **Nearby View Processing:** Capture the temporally aligned nearby station image and perform the same ROI selection, dehazing and feature extraction.
+3. **Feature Integration:** Combine the image-derived features from both views with cyclically encoded date and time information.
+4. **Regression:** Provide the combined features to an ExtraTrees regression model.
+5. **Prediction:** Generate the estimated PM2.5 concentration for the distant monitoring station.
+
+### Algorithm II: Residual Prediction-Based Approach
+
+This approach uses a two-phase prediction framework to refine the initial PM2.5 estimate.
+
+**Phase I – Initial Estimation**
+
+1. Take the distant-view image as input.
+2. Select the corresponding ROI.
+3. Perform image dehazing and extract the ROI's SSIM features.
+4. Use the extracted image features and temporal information as inputs to a regression model trained using ground-truth PM2.5 measurements from the nearby station.
+5. Generate an initial PM2.5 estimate.
+
+**Phase II – Residual Prediction**
+
+1. Calculate the residual as the difference between the ground-truth PM2.5 concentration of the distant station and the initial PM2.5 estimate.
+2. Train a machine learning regression model to estimate this residual.
+3. Use the predicted residual to revise the initial PM2.5 estimate.
+4. Obtain the final PM2.5 concentration estimate for the distant monitoring station.
+
+The final estimate is expressed as:
+
+\[
+\text{Final PM}_{2.5}
+=
+\text{Initial PM}_{2.5}
++
+\text{Predicted Residual}
+\]
+
+Both approaches use the ExtraTrees regression framework to estimate PM2.5 concentrations.
+
+### Overall Workflow
+
+flowchart TB
+    A(["📷 Original Camera Images"]) --> B["Image Organization"]
+    B --> C["Region of Interest (ROI) Extraction"]
+    C --> D["Image Dehazing"]
+    D --> E["SSIM Feature Extraction"]
+    E --> F["Image-Associated Dataset"]
+    F --> G["Temporal Feature Engineering<br/>Cyclic Date & Time Encoding"]
+
+    G --> H{"Select Prediction Approach"}
+
+    subgraph ALG1["ALGORITHM I · FAR–NEAR VIEW INTEGRATION"]
+        direction TB
+        I1["Distant View Features<br/>Belur"]
+        I2["Nearby View Features<br/>FRB / RBU"]
+        I3["Feature Integration<br/>Visual + Temporal Features"]
+        I4["ExtraTrees Regressor"]
+        I5(["Distant-Station<br/>PM2.5 Prediction"])
+
+        I1 --> I3
+        I2 --> I3
+        I3 --> I4 --> I5
+    end
+
+    subgraph ALG2["ALGORITHM II · RESIDUAL PREDICTION"]
+        direction TB
+        J1["Distant-View Features"]
+        J2["Phase I: Initial Estimation<br/>ExtraTrees Model"]
+        J3["Initial PM2.5 Estimate"]
+        J4["Calculate Residual<br/>Actual Distant PM2.5 − Initial Estimate"]
+        J5["Phase II: Residual Estimation<br/>ExtraTrees Model"]
+        J6["Predicted Residual"]
+        J7["Final Estimate<br/>Initial Estimate + Predicted Residual"]
+
+        J1 --> J2 --> J3 --> J4 --> J5 --> J6 --> J7
+    end
+
+    H --> I1
+    H --> I2
+    H --> J1
+
+    I5 --> K(["Final PM2.5 Estimation"])
+    J7 --> K
+
+    classDef source fill:#172554,stroke:#60A5FA,color:#FFFFFF,stroke-width:2px
+    classDef process fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:1.5px
+    classDef decision fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
+    classDef algo1 fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:1.5px
+    classDef algo2 fill:#FFEDD5,stroke:#EA580C,color:#7C2D12,stroke-width:1.5px
+    classDef output fill:#172554,stroke:#A78BFA,color:#FFFFFF,stroke-width:2px
+
+    class A,K source
+    class B,C,D,E,F,G process
+    class H decision
+    class I1,I2,I3,I4,I5 algo1
+    class J1,J2,J3,J4,J5,J6,J7 algo2
+
+    style ALG1 fill:#F0FDF4,stroke:#16A34A,stroke-width:2px
+    style ALG2 fill:#FFF7ED,stroke:#EA580C,stroke-width:2px
+
 
 ## Repository Contents
-
-The repository contains four primary implementations.
 
 ### 1. Image Dehazing
 
@@ -103,15 +166,6 @@ The implementation generates two image representations:
 - Contrast-enhanced image.
 
 These representations are processed using multiple weight maps before multi-scale image fusion.
-
-**Image enhancement techniques**
-
-- White balancing.
-- Contrast enhancement.
-- Gaussian smoothing.
-- High-boost sharpening.
-- Wavelet-based fusion.
-- Contrast Limited Adaptive Histogram Equalization (CLAHE).
 
 **Weight map generation**
 
@@ -151,15 +205,9 @@ The script also includes batch processing to:
 
 ### 2. Image Data Processing and Dataset Preparation
 
-**File:** `image_data_process.py`
+**File:** `image_data_processing.py`
 
-This script handles image organization, monitoring-station data cleaning and the generation of image-associated environmental datasets.
-
-**Image organization**
-
-- Renaming images using acquisition date and time.
-- Checking the correspondence between original and dehazed images.
-- Organizing image filenames for subsequent processing.
+This script handles monitoring-station data cleaning and the generation of image-associated environmental datasets.
 
 **Air quality data preprocessing**
 
@@ -200,7 +248,7 @@ The processed datasets are exported in CSV format for subsequent feature extract
 
 ### 3. ROI Extraction and SSIM Calculation
 
-**File:** `roi_trial.py`
+**File:** `roitrial.py`
 
 This script extracts predefined image regions and calculates structural similarity features using original and dehazed images.
 
@@ -212,9 +260,8 @@ This script extracts predefined image regions and calculates structural similari
 4. Convert both images into grayscale.
 5. Apply morphological erosion to the dehazed grayscale image.
 6. Extract the predefined ROI using pixel coordinates.
-7. Calculate SSIM between the original and dehazed ROI.
-8. Calculate SSIM between the original and eroded dehazed ROI.
-9. Append the extracted features to the CSV dataset.
+7. Calculate SSIM-based features.
+8. Append the extracted features to the CSV dataset.
 
 **ROI Configuration**
 
@@ -231,48 +278,124 @@ The implemented ROI uses the following image coordinates:
 
 A rectangular structuring element of size 3 × 3 is used for morphological erosion.
 
-**Extracted Features**
-
-| Feature | Description |
-|---|---|
-| `SSIM_ROI` | Structural similarity between the original ROI and dehazed ROI |
-| `ERODE_SSIM_ROI` | Structural similarity between the original ROI and eroded dehazed ROI |
-
 The extracted features are stored in the CSV dataset and subsequently used as inputs for machine learning models.
 
-### 4. Machine Learning and Residual Prediction
+### 4. Machine Learning Models
 
-**File:** `model.ipynb`
+The research uses ExtraTrees regression models to estimate PM2.5 concentrations from image-derived features and temporal information.
 
-This notebook implements ExtraTrees regression models for PM2.5 estimation using image-derived features and temporal information.
+Two notebooks contain the model implementations.
 
-The uploaded notebook includes Belur and Belur–FRB experiments, followed by a residual prediction model for Belur.
+#### A. Algorithm I – Far-Near View Integrated Model
 
-**A. Temporal Feature Engineering**
+**Notebook:** `model_frb_belur.ipynb`
 
-Date and time information are extracted from image filenames:
+This implementation combines image-derived features from both the distant Belur view and the nearby FRB view to estimate the PM2.5 concentration at Belur.
 
-- Day
-- Month
-- Hour
-- Minute
+**1. Input Dataset**
 
-Month names are converted into numerical values.
+The model uses a combined CSV dataset containing image-derived features and acquisition date and time information.
 
-Cyclic encoding is applied to represent periodic temporal information using sine and cosine transformations.
+**2. Temporal Feature Engineering**
 
-The notebook calculates:
+Day, month, hour and minute information are converted into cyclic features using sine and cosine transformations.
+
+The generated features include:
 
 - `Day_sin`, `Day_cos`
 - `Mon_sin`, `Mon_cos`
 - `Hour_sin`, `Hour_cos`
 - `Min_sin`, `Min_cos`
 
-The regression feature matrices use SSIM features along with cyclically encoded day, month and hour information.
+This encoding represents the periodic nature of time-related information.
 
-**B. Feature Selection**
+**3. Feature Integration**
 
-The primary model inputs are:
+The model combines features from both camera views:
+
+| Feature | Description |
+|---|---|
+| `Belur_SSIM` | SSIM feature from the distant Belur view |
+| `Belur_ERODE` | Erosion-based SSIM feature from the Belur view |
+| `FRB_SSIM` | SSIM feature from the nearby FRB view |
+| `FRB_ERODE` | Erosion-based SSIM feature from the FRB view |
+| Temporal Features | Cyclically encoded day, month and hour |
+
+These features are used together as the model's input.
+
+**4. Target Variable and Normalization**
+
+The target variable is the PM2.5 concentration measured at Belur.
+
+PM2.5 values are normalized using Min-Max normalization based on the training dataset.
+
+**5. Model Training and Hyperparameter Optimization**
+
+An ExtraTrees Regressor is used for regression.
+
+The dataset is divided into training and testing subsets using an 80:20 split with `random_state=42`.
+
+GridSearchCV is used for hyperparameter optimization. The search considers:
+
+| Parameter | Values |
+|---|---|
+| `n_estimators` | 10–1010, in steps of 10 |
+| `max_features` | `sqrt`, `log2`, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0 |
+| `bootstrap` | True, False |
+
+The final model is configured with:
+
+- `n_estimators = 410`
+- `max_features = 1.0`
+- `bootstrap = True`
+- `random_state = 42`
+
+**6. Prediction and Model Saving**
+
+The trained model predicts normalized PM2.5 values for the training and testing datasets. The predictions are converted back to the original PM2.5 scale.
+
+The trained model is saved using Joblib:
+
+`etr_frb_belur.pkl`
+
+The processed datasets are exported as:
+
+- `frb_belur_train.csv`
+- `frb_belur_test.csv`
+
+#### B. Algorithm II – Residual Prediction-Based Model
+
+**Notebook:** `model.ipynb`
+
+This notebook implements the two-phase residual prediction framework. It first trains separate ExtraTrees models for the distant and nearby views and then uses the nearby-view prediction to estimate the residual for the distant station.
+
+**1. Input Datasets**
+
+The notebook uses two CSV datasets:
+
+- `belur.csv`
+- `belur_frb.csv`
+
+The datasets contain image-derived features and corresponding PM2.5 measurements.
+
+**2. Temporal Feature Engineering**
+
+Day, month, hour and minute are extracted from image filenames.
+
+Month names are converted into numerical values. Cyclic encoding is then applied using sine and cosine transformations.
+
+The generated features include:
+
+- `Day_sin`, `Day_cos`
+- `Mon_sin`, `Mon_cos`
+- `Hour_sin`, `Hour_cos`
+- `Min_sin`, `Min_cos`
+
+**3. Phase I – Initial PM2.5 Estimation**
+
+Separate ExtraTrees regression models are trained using the distant Belur dataset and the nearby FRB dataset.
+
+The input features include:
 
 - `SSIM_ROI`
 - `ERODE_SSIM_ROI`
@@ -283,68 +406,84 @@ The primary model inputs are:
 - `Hour_sin`
 - `Hour_cos`
 
-The target variable is normalized PM2.5 concentration.
+The target variable is the normalized PM2.5 concentration.
 
-**C. Model Training**
+Both datasets are divided into training and testing subsets using an 80:20 split with `random_state=42`.
 
-ExtraTrees Regressor is used for PM2.5 regression.
+GridSearchCV is used for hyperparameter optimization.
 
-The dataset is divided into training and testing subsets using an 80:20 split with `random_state=42`.
+The selected ExtraTrees models are configured as follows:
 
-Hyperparameter optimization is performed using GridSearchCV.
+| Model | `n_estimators` | `max_features` | `bootstrap` |
+|---|---:|---:|---|
+| Belur | 410 | 1.0 | True |
+| Belur–FRB | 160 | 1.0 | False |
 
-The parameter grid includes:
+The trained models generate initial PM2.5 predictions for their respective locations.
 
-| Parameter | Values |
+The predictions are converted back to the original PM2.5 scale.
+
+**4. Phase II – Residual Prediction**
+
+The Belur and Belur–FRB datasets are merged using the common `ImageFile` column.
+
+The residual is calculated as:
+
+\[
+\text{Residual}
+=
+\text{Actual Belur PM}_{2.5}
+-
+\text{Initial Belur PM}_{2.5}\text{ Estimate}
+\]
+
+The residual values are normalized using Min-Max normalization.
+
+The second ExtraTrees model uses the following input features:
+
+- Distant-view SSIM features.
+- Cyclically encoded temporal features.
+- Normalized nearby-station PM2.5 estimate.
+
+The target variable is the normalized residual.
+
+The selected residual model uses:
+
+| Parameter | Value |
 |---|---|
-| `n_estimators` | 10 to 1010, in steps of 10 |
-| `max_features` | sqrt, log2, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0 |
-| `bootstrap` | True, False |
+| `n_estimators` | 490 |
+| `max_features` | 0.7 |
+| `bootstrap` | False |
+| `random_state` | 42 |
 
-The notebook trains separate models for the Belur and Belur–FRB datasets.
+**5. Final PM2.5 Estimation**
 
-**D. Residual Prediction**
+The residual model predicts the correction required for the initial estimate.
 
-A two-phase prediction strategy is implemented.
+The predicted residual is converted back to the original scale and added to the initial nearby-station estimate.
 
-**Phase I – Initial Estimation**
+\[
+\text{Final PM}_{2.5}
+=
+\text{Initial PM}_{2.5}\text{ Estimate}
++
+\text{Predicted Residual}
+\]
 
-- Train an ExtraTrees model using distant-view image features.
-- Estimate the PM2.5 concentration corresponding to the nearby monitoring station.
-- Generate initial PM2.5 estimates.
+The notebook evaluates the final predictions using the R² score and exports the resulting training and testing datasets.
 
-**Phase II – Residual Estimation**
+**6. Model Saving**
 
-- Merge the corresponding Belur and Belur–FRB datasets using image filenames.
-- Calculate the residual between the actual Belur PM2.5 concentration and the initial Belur estimate.
-- Normalize the residual values.
-- Train a second ExtraTrees regression model to predict the residual.
-- Use the image-derived features, temporal features and normalized nearby PM2.5 estimate as inputs.
-
-The final PM2.5 estimate is calculated as:
-
-`Final PM2.5 = Initial PM2.5 Estimate + Predicted Residual`
-
-**E. Model Saving**
-
-Trained regression models are saved using Joblib in `.pkl` format.
-
-The notebook includes:
+The trained models are saved using Joblib:
 
 - `etr_belur.pkl`
 - `etr_belur_frb.pkl`
 - `etr_belur_res.pkl`
 
-**F. Model Evaluation**
+The final prediction datasets are exported as:
 
-Model performance is evaluated using:
-
-- R² score.
-- Training and testing scores.
-- Actual versus predicted PM2.5 comparisons.
-- Scatter plots with a reference diagonal.
-
-The notebook also exports processed training and testing datasets containing the prediction results.
+- `final_train_belur.csv`
+- `final_test_belur.csv`
 
 ## Experimental Results
 
@@ -363,13 +502,14 @@ The following results are reported in the research paper:
 | 3 | Algorithm II | Belur | 0.92 | 2.43 |
 | 4 | Algorithm II | Howrah | 0.98 | 1.57 |
 
-*These are paper-reported experimental results, not a claim that every experiment is implemented in the uploaded notebook.*
+These are the paper-reported results and should not be interpreted as the output scores of every uploaded notebook.
 
 ### Key Findings
 
 - The residual prediction approach performs better than the far-near integrated approach in the reported experiments.
 - Combining visual features and temporal information improves prediction performance.
 - The inclusion of nearby and distant visual information helps account for spatial variation in PM2.5 concentration.
+- Distant-view images can provide useful information for estimating PM2.5 concentrations at locations beyond the immediate camera surroundings.
 
 ## Technologies and Libraries
 
@@ -414,19 +554,25 @@ Run `dehaze_production.py` after configuring the original image directory and ou
 
 **Step 2: Dataset Preparation**
 
-Run `image_data_process.py` after providing the monitoring-station Excel files and corresponding image directories.
+Run `image_data_processing.py` after providing the monitoring-station Excel files and corresponding image directories.
 
 **Step 3: ROI and SSIM Extraction**
 
-Run `roi_trial.py` after preparing the original and dehazed image directories and the corresponding CSV dataset.
+Run `roitrial.py` after preparing the original and dehazed image directories and the corresponding CSV dataset.
 
-**Step 4: Machine Learning**
+**Step 4: Algorithm I – Far-Near View Integration**
 
-Open `model.ipynb` in Jupyter Notebook and provide the required CSV files.
+Open `model_frb_belur.ipynb` in Jupyter Notebook and provide the combined dataset containing Belur and FRB image features.
 
-Execute the notebook cells to perform feature engineering, model training, residual prediction and evaluation.
+Execute the notebook cells to perform temporal feature engineering, feature integration, model training, prediction and evaluation.
 
-**Note:** The uploaded scripts currently contain machine-specific file paths. These paths must be updated to match the local dataset directories. The ROI script also contains an unfinished second-ROI section that needs to be completed or disabled before running the script.
+**Step 5: Algorithm II – Residual Prediction**
+
+Open `model.ipynb` in Jupyter Notebook and provide the required Belur and Belur–FRB CSV datasets.
+
+Execute the notebook cells to train the initial regression models, calculate residuals, train the residual prediction model and obtain the final PM2.5 estimates.
+
+**Note:** The uploaded scripts and notebooks contain machine-specific file paths or rely on input files that must be supplied separately. These paths and filenames must be updated to match the local dataset directories.
 
 ## Dataset Availability
 
@@ -436,7 +582,7 @@ Due to storage limitations, the original image collection is not included in thi
 
 The repository focuses on sharing the image-processing implementation, dataset preparation code, feature extraction methodology and machine learning experiments.
 
-Access to the corresponding image data and ground-truth monitoring station measurements is required to reproduce the complete experiments.
+Access to the corresponding image data and ground-truth monitoring-station measurements is required to reproduce the complete experiments.
 
 ## Future Scope
 
@@ -483,4 +629,4 @@ The authors acknowledge the infrastructural support provided by the Indian Stati
 
 **Institution:** Visva-Bharati, Santiniketan
 
-**Research Collaboration:** Indian Statistical Institute, Kolkatatation details, model configurations, and experimental results may not be publicly included due to project and research considerations.
+**Research Collaboration:** Indian Statistical Institute, Kolkataation details, model configurations, and experimental results may not be publicly included due to project and research considerations.
