@@ -432,15 +432,13 @@ The predictions are converted back to the original PM2.5 scale.
 
 The Belur and Belur–FRB datasets are merged using the common `ImageFile` column.
 
+
 The residual is calculated as:
 
-\[
 $$
-\text{Residual} =
-\text{Actual Belur PM}_{2.5}
--
-\text{Initial Belur PM}_{2.5}\text{ Estimate}
+\text{Residual} = \text{Actual Belur PM}_{2.5} - \text{Initial Belur PM}_{2.5}\text{ Estimate}
 $$
+
 
 The residual values are normalized using Min-Max normalization.
 
@@ -466,6 +464,9 @@ The selected residual model uses:
 The residual model predicts the correction required for the initial estimate.
 
 The predicted residual is converted back to the original scale and added to the initial nearby-station estimate.
+
+
+The final estimate is calculated as:
 
 $$
 \boxed{
