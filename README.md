@@ -80,11 +80,13 @@ This approach uses a two-phase prediction framework to refine the initial PM2.5 
 
 The final estimate is expressed as:
 
-{Final PM}_{2.5}
+$$
+\text{Final PM}_{2.5}
 =
-{Initial PM}_{2.5}
+\text{Initial PM}_{2.5}
 +
-{Predicted Residual}
+\text{Predicted Residual}
+$$
 
 Both approaches use the ExtraTrees regression framework to estimate PM2.5 concentrations.
 
@@ -433,12 +435,12 @@ The Belur and Belur–FRB datasets are merged using the common `ImageFile` colum
 The residual is calculated as:
 
 \[
-\text{Residual}
-=
+$$
+\text{Residual} =
 \text{Actual Belur PM}_{2.5}
 -
 \text{Initial Belur PM}_{2.5}\text{ Estimate}
-\]
+$$
 
 The residual values are normalized using Min-Max normalization.
 
@@ -465,13 +467,15 @@ The residual model predicts the correction required for the initial estimate.
 
 The predicted residual is converted back to the original scale and added to the initial nearby-station estimate.
 
-\[
+$$
+\boxed{
 \text{Final PM}_{2.5}
 =
 \text{Initial PM}_{2.5}\text{ Estimate}
 +
 \text{Predicted Residual}
-\]
+}
+$$
 
 The notebook evaluates the final predictions using the R² score and exports the resulting training and testing datasets.
 
