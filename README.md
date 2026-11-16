@@ -80,13 +80,11 @@ This approach uses a two-phase prediction framework to refine the initial PM2.5 
 
 The final estimate is expressed as:
 
-\[
-\text{Final PM}_{2.5}
+{Final PM}_{2.5}
 =
-\text{Initial PM}_{2.5}
+{Initial PM}_{2.5}
 +
-\text{Predicted Residual}
-\]
+{Predicted Residual}
 
 Both approaches use the ExtraTrees regression framework to estimate PM2.5 concentrations.
 
